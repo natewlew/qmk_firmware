@@ -1,8 +1,8 @@
 #include "zeta.h"
 #include QMK_KEYBOARD_H
 
-bool is_ag_swapped(void); /* function prototype for add */
-void handle_swapped_send(const char *str);
+bool is_ag_swapped(void);
+void send_swapped_key(int keycode);
 
 extern keymap_config_t keymap_config;
 
@@ -31,8 +31,13 @@ enum custom_keycodes
     C_CTR_CUT,
     C_CTR_COPY,
     C_CTR_PASTE,
+    C_SELECT_ALL,
+    C_SAVE,
+    C_LOG_OUT,
     C_CTR_FIND,
-    ALT_TAB
+    ALT_TAB,
+    ALT_SHIFT_TAB,
+    SCREENSHOT_SELECTION
 };
 
 // Fillers to make layering more clear
@@ -58,13 +63,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [_LOWER] = LAYOUT_ortho_4x12( \
     KC_TILD, KC_EXLM, KC_AT,   KC_HASH, KC_DLR,  KC_PERC, KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, KC_DEL, \
     KC_CAPS, KC_HOME, KC_PGDN, KC_PGUP, KC_END,  _______, _______, KC_UNDS, KC_PLUS, KC_LCBR, KC_RCBR, KC_PIPE, \
-    _______, _______, _______, _______, _______, _______, _______, _______, _______, KC_DOT,  _______,  _______, \
+    _______, _______, _______, _______, SCREENSHOT_SELECTION, _______, _______, _______, _______, KC_DOT,  _______,  _______, \
     _______, _______, _______, _______, _______, _______, _______, _______, KC_HOME, KC_PGDN, KC_PGUP, KC_END \
 ),
 
 [_LOWER_SPACE] = LAYOUT_ortho_4x12( \
-    ALT_TAB, _______, _______, _______, _______,  _______, _______, _______, _______, _______, _______, _______, \
-    ALT_TILD, _______, _______, _______, C_CTR_FIND,  _______, _______, _______, _______, _______, _______, _______, \
+    _______, _______, _______, ALT_SHIFT_TAB, ALT_TAB,  _______, _______, _______, _______, _______, _______, _______, \
+    ALT_TILD, C_SELECT_ALL, C_SAVE, C_LOG_OUT, C_CTR_FIND,  _______, _______, _______, _______, _______, _______, _______, \
     _______, C_CTR_UNDO, C_CTR_CUT, C_CTR_COPY, C_CTR_PASTE, _______, _______, _______, _______, _______, _______, _______, \
     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______ \
 ),
@@ -94,6 +99,18 @@ bool is_ag_swapped() {
     return false;
 }
 
+// Send control. Changes to gui if ag hasn't been swapped.
+void send_control_key(uint8_t keycode) {
+    if (is_ag_swapped()) {
+        register_code(KC_LCTL);
+        tap_code(keycode);
+        unregister_code(KC_LCTL);
+    } else {
+        register_code(KC_LGUI);
+        tap_code(keycode);
+        unregister_code(KC_LGUI);
+    }
+}
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
@@ -114,7 +131,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     // We are finished with our alt+tab combo.
                     // Release Alt/Gui
                     tabbing = false;
-                    SEND_STRING(SS_UP(X_LGUI));
+                    unregister_code(KC_LGUI);
                 }
                 layer_off(_LOWER_SPACE);
             }
@@ -141,51 +158,49 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case C_CTR_UNDO:
             if (record->event.pressed) {
-                if (is_ag_swapped()) {
-                    SEND_STRING(SS_LCTL("z"));
-                } else {
-                    SEND_STRING(SS_LGUI("z"));
-                }
+                send_control_key(KC_Z);
             }
             break;
 
         case C_CTR_CUT:
             if (record->event.pressed) {
-                if (is_ag_swapped()) {
-                    SEND_STRING(SS_LCTL("x"));
-                } else {
-                    SEND_STRING(SS_LGUI("x"));
-                }
+                send_control_key(KC_X);
             }
             break;
 
         case C_CTR_COPY:
             if (record->event.pressed) {
-                if (is_ag_swapped()) {
-                    SEND_STRING(SS_LCTL("c"));
-                } else {
-                    SEND_STRING(SS_LGUI("c"));
-                }
+                send_control_key(KC_C);
             }
             break;
 
         case C_CTR_PASTE:
             if (record->event.pressed) {
-                if (is_ag_swapped()) {
-                    SEND_STRING(SS_LCTL("v"));
-                } else {
-                    SEND_STRING(SS_LGUI("v"));
-                }
+                send_control_key(KC_V);
+            }
+            break;
+
+        case C_SELECT_ALL:
+            if (record->event.pressed) {
+                send_control_key(KC_A);
+            }
+            break;
+
+        case C_SAVE:
+            if (record->event.pressed) {
+                send_control_key(KC_S);
+            }
+            break;
+
+        case C_LOG_OUT:
+            if (record->event.pressed) {
+                send_control_key(KC_D);
             }
             break;
 
         case C_CTR_FIND:
             if (record->event.pressed) {
-                if (is_ag_swapped()) {
-                    SEND_STRING(SS_LCTL("f"));
-                } else {
-                    SEND_STRING(SS_LGUI("f"));
-                }
+                send_control_key(KC_F);
             }
             break;
 
@@ -195,9 +210,41 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 if (tabbing == false) {
                     // We just started so press alt/gui.
                     tabbing = true;
-                    SEND_STRING(SS_DOWN(X_LGUI));
+                    register_code(KC_LGUI);
                 }
-                SEND_STRING(SS_TAP(X_TAB));
+                tap_code(KC_TAB);
+            }
+            break;
+
+        case ALT_SHIFT_TAB:
+            // Custom Function for Alt+Shift+Tab
+            if (record->event.pressed) {
+                if (tabbing == false) {
+                    // We just started so press alt/gui.
+                    tabbing = true;
+                    register_code(KC_LGUI);
+                }
+                register_code(KC_LSFT);
+                tap_code(KC_TAB);
+                unregister_code(KC_LSFT);
+            }
+            break;
+
+        case SCREENSHOT_SELECTION:
+            if (record->event.pressed) {
+                if (is_ag_swapped()) {
+                    // Linux
+                    register_code(KC_LSFT);
+                    tap_code(KC_PSCR);
+                    unregister_code(KC_LSFT);
+                } else {
+                    // Mac
+                    register_code(KC_LSFT);
+                    register_code(KC_LGUI);
+                    tap_code(KC_PSCR);
+                    unregister_code(KC_LGUI);
+                    unregister_code(KC_LSFT);
+                }
             }
             break;
     }
