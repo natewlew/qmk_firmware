@@ -3,6 +3,8 @@
 
 bool is_ag_swapped(void);
 void send_swapped_key(int keycode);
+void start_tabbing(void);
+void finish_tabbing(void);
 
 extern keymap_config_t keymap_config;
 
@@ -12,22 +14,16 @@ extern keymap_config_t keymap_config;
 // entirely and just use numbers.
 enum custom_layers
 {
-	_QWERTY,
-	_LOWER,
-    _LOWER_SPACE,
-	_RAISE,
-	_ADJUST
+	QWERTY,
+	LOWER,
+    LOWER_SPACE,
+	RAISE,
+	ADJUST
 };
 
 enum custom_keycodes
 {
-    QWERTY = SAFE_RANGE,
-    LOWER,
-    LOWER_SPACE,
-    RAISE,
-    ADJUST,
-    // Custom Keycodes for moding mac/linux ctrl functions
-    C_CTR_UNDO,
+    C_CTR_UNDO = SAFE_RANGE,
     C_CTR_CUT,
     C_CTR_COPY,
     C_CTR_PASTE,
@@ -44,37 +40,34 @@ enum custom_keycodes
 #define XXXXXXX KC_NO
 #define _______ KC_TRNS
 
-#define LOWER_SPACE LT(LOWER_SPACE, KC_SPC)
-#define ALT_TILD LGUI(KC_TILD)
-
 // Handle whether or not we are using alt+tab.
 bool tabbing = false;
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
-[_QWERTY] = LAYOUT_ortho_4x12( \
+[QWERTY] = LAYOUT_ortho_4x12( \
     KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_BSPC, \
     KC_ESC,  KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, \
     KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, RSFT_T(KC_ENT), \
-    KC_LCTL, KC_LALT, KC_LGUI, ADJUST,  LOWER,   LOWER_SPACE,  KC_SPC,  RAISE,   KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT \
+    KC_LCTL, KC_LALT, KC_LGUI, MO(ADJUST),  MO(LOWER),   LT(LOWER_SPACE, KC_SPC),  KC_SPC,  MO(RAISE),   KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT \
 ),
 
 
-[_LOWER] = LAYOUT_ortho_4x12( \
+[LOWER] = LAYOUT_ortho_4x12( \
     KC_TILD, KC_EXLM, KC_AT,   KC_HASH, KC_DLR,  KC_PERC, KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, KC_DEL, \
     KC_CAPS, KC_HOME, KC_PGDN, KC_PGUP, KC_END,  _______, _______, KC_UNDS, KC_PLUS, KC_LCBR, KC_RCBR, KC_PIPE, \
     _______, _______, _______, _______, SCREENSHOT_SELECTION, _______, _______, _______, _______, KC_DOT,  _______,  _______, \
     _______, _______, _______, _______, _______, _______, _______, _______, KC_HOME, KC_PGDN, KC_PGUP, KC_END \
 ),
 
-[_LOWER_SPACE] = LAYOUT_ortho_4x12( \
+[LOWER_SPACE] = LAYOUT_ortho_4x12( \
     _______, _______, _______, ALT_SHIFT_TAB, ALT_TAB,  _______, _______, _______, _______, _______, _______, _______, \
-    ALT_TILD, C_SELECT_ALL, C_SAVE, C_LOG_OUT, C_CTR_FIND,  _______, _______, _______, _______, _______, _______, _______, \
+    LGUI(KC_TILD), C_SELECT_ALL, C_SAVE, C_LOG_OUT, C_CTR_FIND,  _______, _______, _______, _______, _______, _______, _______, \
     _______, C_CTR_UNDO, C_CTR_CUT, C_CTR_COPY, C_CTR_PASTE, _______, _______, _______, _______, _______, _______, _______, \
     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______ \
 ),
 
-[_RAISE] = LAYOUT_ortho_4x12( \
+[RAISE] = LAYOUT_ortho_4x12( \
     KC_GRV,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_DEL, \
     KC_CAPS, KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT, _______, _______, KC_MINS, KC_EQL,  KC_LBRC, KC_RBRC, KC_BSLS, \
     _______, _______, _______, _______, _______, _______, _______, _______, _______, KC_DOT,  _______, _______, \
@@ -82,7 +75,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 ),
 
 
-[_ADJUST] =  LAYOUT_ortho_4x12( \
+[ADJUST] =  LAYOUT_ortho_4x12( \
     KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,    KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12, \
     LGUI(KC_TILD), RESET, _______,   AU_ON,   AU_OFF,  AG_NORM, AG_SWAP, _______, _______, _______, _______,  KC_DEL, \
     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, \
@@ -112,123 +105,90 @@ void send_control_key(uint8_t keycode) {
     }
 }
 
+void start_tabbing() {
+    if (tabbing == false) {
+        // We just started so press alt/gui.
+        tabbing = true;
+        register_code(KC_LGUI);
+    }
+}
+
+void finish_tabbing() {
+    if (tabbing == true) {
+        // We are finished with our alt+tab combo.
+        // Release Alt/Gui
+        tabbing = false;
+        unregister_code(KC_LGUI);
+    }
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
-        case LOWER:
-            if (record->event.pressed) {
-                layer_on(_LOWER);
-            } else {
-                layer_off(_LOWER);
-            }
-            return false;
-            break;
-
-        case LOWER_SPACE:
-            if (record->event.pressed) {
-                layer_on(_LOWER_SPACE);
-            } else {
-                if (tabbing == true) {
-                    // We are finished with our alt+tab combo.
-                    // Release Alt/Gui
-                    tabbing = false;
-                    unregister_code(KC_LGUI);
-                }
-                layer_off(_LOWER_SPACE);
-            }
-            return false;
-            break;
-
-        case RAISE:
-            if (record->event.pressed) {
-                layer_on(_RAISE);
-            } else {
-                layer_off(_RAISE);
-            }
-            return false;
-            break;
-
-        case ADJUST:
-            if (record->event.pressed) {
-                layer_on(_ADJUST);
-            } else {
-                layer_off(_ADJUST);
-            }
-            return false;
-            break;
-
         case C_CTR_UNDO:
             if (record->event.pressed) {
                 send_control_key(KC_Z);
             }
-            break;
+            return false;
 
         case C_CTR_CUT:
             if (record->event.pressed) {
                 send_control_key(KC_X);
             }
-            break;
+            return false;
 
         case C_CTR_COPY:
             if (record->event.pressed) {
                 send_control_key(KC_C);
             }
-            break;
+            return false;
 
         case C_CTR_PASTE:
             if (record->event.pressed) {
                 send_control_key(KC_V);
             }
-            break;
+            return false;
 
         case C_SELECT_ALL:
             if (record->event.pressed) {
                 send_control_key(KC_A);
             }
-            break;
+            return false;
 
         case C_SAVE:
             if (record->event.pressed) {
                 send_control_key(KC_S);
             }
-            break;
+            return false;
 
         case C_LOG_OUT:
             if (record->event.pressed) {
                 send_control_key(KC_D);
             }
-            break;
+            return false;
 
         case C_CTR_FIND:
             if (record->event.pressed) {
                 send_control_key(KC_F);
             }
-            break;
+            return false;
 
         case ALT_TAB:
             // Custom Function for Alt+Tab
             if (record->event.pressed) {
-                if (tabbing == false) {
-                    // We just started so press alt/gui.
-                    tabbing = true;
-                    register_code(KC_LGUI);
-                }
+                start_tabbing();
                 tap_code(KC_TAB);
             }
-            break;
+            return false;
 
         case ALT_SHIFT_TAB:
             // Custom Function for Alt+Shift+Tab
             if (record->event.pressed) {
-                if (tabbing == false) {
-                    // We just started so press alt/gui.
-                    tabbing = true;
-                    register_code(KC_LGUI);
-                }
+                start_tabbing();
                 register_code(KC_LSFT);
                 tap_code(KC_TAB);
                 unregister_code(KC_LSFT);
             }
-            break;
+            return false;
 
         case SCREENSHOT_SELECTION:
             if (record->event.pressed) {
@@ -246,9 +206,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     unregister_code(KC_LSFT);
                 }
             }
+            return false;
+
+        default:
+            return true;
+    }
+}
+
+layer_state_t layer_state_set_user(layer_state_t state) {
+    switch (get_highest_layer(state)) {
+        case QWERTY:
+            // When switching back to the default layer, check if we need to finish tabbing.
+            finish_tabbing();
+            break;
+        default:
             break;
     }
-    return true;
+  return state;
 }
 
 void matrix_scan_user(void) {
