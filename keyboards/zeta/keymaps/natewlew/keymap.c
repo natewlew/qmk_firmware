@@ -24,6 +24,7 @@ enum custom_layers
 enum custom_keycodes
 {
     C_CTR_UNDO = SAFE_RANGE,
+    C_CTR_REDO,
     C_CTR_CUT,
     C_CTR_COPY,
     C_CTR_PASTE,
@@ -31,6 +32,8 @@ enum custom_keycodes
     C_SAVE,
     C_LOG_OUT,
     C_CTR_FIND,
+    C_CTR_FORWARD_SLASH,
+    C_CTR,
     ALT_TAB,
     ALT_SHIFT_TAB,
     SCREENSHOT_SELECTION
@@ -61,9 +64,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 ),
 
 [LOWER_SPACE] = LAYOUT_ortho_4x12( \
-    _______, _______, _______, ALT_SHIFT_TAB, ALT_TAB,  _______, _______, _______, _______, _______, _______, _______, \
-    LGUI(KC_TILD), C_SELECT_ALL, C_SAVE, C_LOG_OUT, C_CTR_FIND,  _______, _______, _______, _______, _______, _______, _______, \
-    _______, C_CTR_UNDO, C_CTR_CUT, C_CTR_COPY, C_CTR_PASTE, _______, _______, _______, _______, _______, _______, _______, \
+    _______, _______, _______, ALT_SHIFT_TAB, ALT_TAB,  LGUI(KC_TILD), _______, _______, _______, _______, _______, _______, \
+    _______, C_SELECT_ALL, C_SAVE, C_LOG_OUT, C_CTR_FIND,  C_CTR, _______, _______, _______, _______, _______, _______, \
+    C_CTR_REDO, C_CTR_UNDO, C_CTR_CUT, C_CTR_COPY, C_CTR_PASTE, _______, _______, _______, _______, _______, C_CTR_FORWARD_SLASH, _______, \
     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______ \
 ),
 
@@ -124,9 +127,33 @@ void finish_tabbing() {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
+        case C_CTR:
+            if (record->event.pressed) {
+                if (is_ag_swapped()) {
+                    register_code(KC_LCTL);
+                } else {
+                    register_code(KC_LGUI);
+                }
+            } else {
+                if (is_ag_swapped()) {
+                    unregister_code(KC_LCTL);
+                } else {
+                    unregister_code(KC_LGUI);
+                }
+            }
+            return false;
+
         case C_CTR_UNDO:
             if (record->event.pressed) {
                 send_control_key(KC_Z);
+            }
+            return false;
+
+        case C_CTR_REDO:
+            if (record->event.pressed) {
+                register_code(KC_LSFT);
+                send_control_key(KC_Z);
+                unregister_code(KC_LSFT);
             }
             return false;
 
@@ -172,6 +199,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 
+        case C_CTR_FORWARD_SLASH:
+            if (record->event.pressed) {
+                send_control_key(KC_SLASH);
+            }
+            return false;
+
         case ALT_TAB:
             // Custom Function for Alt+Tab
             if (record->event.pressed) {
@@ -201,7 +234,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     // Mac
                     register_code(KC_LSFT);
                     register_code(KC_LGUI);
-                    tap_code(KC_PSCR);
+                    tap_code(KC_4);
                     unregister_code(KC_LGUI);
                     unregister_code(KC_LSFT);
                 }
