@@ -112,7 +112,11 @@ void start_tabbing() {
     if (tabbing == false) {
         // We just started so press alt/gui.
         tabbing = true;
-        register_code(KC_LGUI);
+        if (is_ag_swapped()) {
+            register_code(KC_LALT);
+        } else {
+            register_code(KC_LGUI);
+        }
     }
 }
 
@@ -121,7 +125,11 @@ void finish_tabbing() {
         // We are finished with our alt+tab combo.
         // Release Alt/Gui
         tabbing = false;
-        unregister_code(KC_LGUI);
+        if (is_ag_swapped()) {
+            unregister_code(KC_LALT);
+        } else {
+            unregister_code(KC_LGUI);
+        }
     }
 }
 
